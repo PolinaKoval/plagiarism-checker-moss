@@ -1,0 +1,12 @@
+{
+    "protocol": "https",
+    "host": "api.github.com",
+    "headers": {
+        "User-Agent": "request"
+    },
+    "oauthQuery": "access_token",
+    "repName": "urfu-2015",
+    "taskName": "javascript-tasks-3",
+    "file": "lego.js",
+    "state": "all"
+}
