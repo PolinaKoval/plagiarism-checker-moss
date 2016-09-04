@@ -1,6 +1,4 @@
 'use strict';
-const async = require('asyncawait/async');
-const await = require('asyncawait/await');
 const request = require('request-promise');
 const fs = require('fs');
 const path =require('path');
