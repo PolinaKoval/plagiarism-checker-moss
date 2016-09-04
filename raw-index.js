@@ -2,10 +2,11 @@
 const request = require('request-promise');
 const fs = require('fs');
 const path =require('path');
+const fse = require('fs-extra')
 const url = require('url');
 const urljoin = require('url-join');
 const config = require('./config.json');
-const OAUTH_TOKEN = fs.readFileSync('./key.txt', 'utf-8');
+const OAUTH_TOKEN = fs.readFileSync('./key.txt', 'utf-8').trim();
 const assignmentDir = path.join(__dirname, 'assigments');
 
 const getOptions = (address) => ({
@@ -15,25 +16,43 @@ const getOptions = (address) => ({
 });
 
 const main = async () => {
-    const allPullRequests = await getPullRequests();
-    const promises = allPullRequests.map(pr => getAndSaveAssignment);
-    await Promise.all(promises);
-    const checkReport = await runChecker();
-    console.log(checkReport);
+    try {
+        await createWorkDir();
+        const allPullRequests = await getPullRequests();
+        const promises = allPullRequests.map(pr => getAndSaveAssignment(pr));
+        await Promise.all(promises);
+        const checkReport = await runChecker();
+        console.log(checkReport);
+    } catch (e) {
+        console.log(e);
+    }
+};
+
+const createWorkDir = () => {
+    return new Promise((resolve, reject) => {
+        fse.emptyDir(assignmentDir, err => {
+            if (!err) {
+                return resolve();
+            }
+            reject(e);
+        });
+    });
 };
 
 const runChecker = () => {
     const exec = require('child_process').exec;
     const assignments = fs.readdirSync(assignmentDir)
         .map(assignment => path.join(assignmentDir, assignment))
+        .join(' ');
 
     return new Promise((resolve, reject) => {
-        exec(`perl -l javscript ${assignments}`, (error, stdout,) => {
+        exec(`perl moss.pl -l javascript ${assignments}`, (error, stdout) => {
           if (error) {
             reject(`exec error: ${error}`);
             return;
           }
-          const report = stdout.split('\n').pop;
+          console.log(stdout);
+          const report = stdout.split(/\r|\n/).pop();
 
           resolve(report)
         });
@@ -69,7 +88,7 @@ const getListPRFiles = (pr) => {
     return request(options)
 };
 
-const getFile = (login, file) => {
+const getFile = (file) => {
     const options = {
         uri: file.raw_url,
         headers: config.headers
@@ -80,8 +99,11 @@ const getFile = (login, file) => {
 const getAndSaveAssignment = async (pr) => {
     const files = await getListPRFiles(pr);
     const fileToCheck = files.find(file => file.filename === config.fileName);
+    if (!fileToCheck) {
+        return;
+    }
     const file = await getFile(fileToCheck);
-    const fullFileName = path.join(assignmentDir, pr.user.login);
+    const fullFileName = path.join(assignmentDir, pr.user.login) + ".js";
     return fs.writeFile(fullFileName, file);
 };
 
