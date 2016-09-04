@@ -1,87 +1,65 @@
 'use strict';
-const rp = require('request-promise');
+const async = require('asyncawait/async');
+const await = require('asyncawait/await');
+const request = require('request-promise');
 const fs = require('fs');
+const path =require('path');
 const url = require('url');
 const urljoin = require('url-join');
 const config = require('./config.json');
 const fileToCheck = config.file;
 const OAUTH_TOKEN = fs.readFileSync('./key.txt', 'utf-8');
-const checker = require('./checker.js');
-const reportGenerator = require('./htmlReport/reportGenerator');
+const assignmentDir = path.join(__dirname, 'assigments');
 
-let dataTocheck = {};
-
-let address = url.format({
-    protocol: config.protocol,
-    host: config.host,
-    pathname: urljoin('repos', config.repName, config.taskName, 'pulls'),
-    query: {
-        [config.oauthQuery]: OAUTH_TOKEN,
-        state: config.state,
-        per_page: 100
-    }
-});
-
-let options = {
+const getOptions = (address) => ({
     uri: address,
     headers: config.headers,
     transform: JSON.parse
-};
+});
 
-rp(options)
-.then(data => {
-    let promises = [];
-    data.forEach(pr => {
-        let login = pr.user.login;
-        let fullName = pr.title;
-        let pullUrl = pr.html_url;
-        dataTocheck[login] = {
-            url: pullUrl,
-            fullName
-        };
-        let promise = filesPromise(pr);
-        promises.push(promise);
-    });
-    Promise.all(promises)
-        .then(compare)
-        .then(reportGenerator.generateTable)
-        .catch(console.error);
-})
-.catch(console.error);
-
-
-function compare() {
-    let data = [];
-    for (let name1 in dataTocheck) {
-        let newData = {
-            user: name1,
-            fullName: dataTocheck[name1].fullName,
-            url: dataTocheck[name1].url,
-            results: []
-        };
-        let file1 = dataTocheck[name1].file;
-        for (let name2 in dataTocheck) {
-            let result = {};
-            if (name1 !== name2) {
-                let file2 = dataTocheck[name2].file;
-                result.percent = checker.check(file1, file2);
-                result.percent > 60 ? result.status = 'dangerous' : result.status = 'normal';
-                newData.results.push(result);
-            } else {
-                newData.results.push({self: true});
-            }
-        }
-        data.push(newData);
-    }
-
-    return {
-        task: config.taskName,
-        data
-    };
+const main = async () => {
+    const allPullRequests = await getPullRequests();
+    const promises = allPullRequests.map(pr => getAndSaveAssignment);
+    await Promise.all(promise);
+    const checkReport = await runChecker();
+    console.log(checkReport);
 }
 
-function filesPromise(pr) {
-    let address = url.format({
+const runChecker = () => {
+    const exec = require('child_process').exec;
+    const assignments = fs.readdirSync(assignmentDir)
+        .map(assignment => path.join(assignmentDir, assignment))
+
+    return new Promise((resolve, reject) => {
+        exec(`perl -l javscript ${assignments}`, (error, stdout, stderr) => {
+          if (error) {
+            reject(`exec error: ${error}`);
+            return;
+          }
+          const report = stdout.split('\n').pop;
+          resolve(report)
+        });
+    });
+}
+
+const getPullRequests = () => {
+    const address = url.format({
+        protocol: config.protocol,
+        host: config.host,
+        pathname: urljoin('repos', config.repName, config.taskName, 'pulls'),
+        query: {
+            [config.oauthQuery]: OAUTH_TOKEN,
+            state: config.state,
+            per_page: 100
+        }
+    });
+
+    const options = getOptions(address);
+    return request(options);
+}
+
+const getListPRFiles = (pr) => {
+    const address = url.format({
         protocol: config.protocol,
         host: config.host,
         pathname: urljoin('repos', config.repName, config.taskName, 'pulls', pr.number, 'files'),
@@ -89,42 +67,23 @@ function filesPromise(pr) {
             [config.oauthQuery]: OAUTH_TOKEN
         }
     });
-    let options = {
-        uri: address,
-        headers: config.headers,
-        transform: JSON.parse
-    };
-    let login = pr.user.login;
-    return new Promise((resolve, reject) => {
-        rp(options)
-        .then(files => {
-            let file = files.find(file => file.filename === fileToCheck);
-            if (file) {
-                filePromise(login, file)
-                .then(resolve)
-                .catch(reject);
-            } else {
-                delete dataTocheck[login];
-                resolve();
-            }
-        })
-        .catch(reject);
-    });
+    const options = getOptions(address);
+    return request(options)
 }
 
-function filePromise(login, file) {
-    let options = {
+const getFile = (login, file) => {
+    const options = {
         uri: file.raw_url,
         headers: config.headers
     };
-    let filename = file.filename;
-    return rp(options)
-    .then(text => {
-        //console.log(login);
-        dataTocheck[login].file = {
-            filename,
-            text
-        };
-    })
-    .catch(console.error);
+    const filePath = path.join('.', assignmentDir, file.filename);
+    return request(options);
+}
+
+const getAndSaveAssignment = async (pr) => {
+    const files = await getListPRFiles(pr);
+    const fileToCheck = files.find(file => file.filename === config.fileName);
+    const file = await getFile(fileToCheck);
+    const fullFileName = path.join(assignmentDir, pr.user.login);
+    return fs.writeFile(filePath, text);
 }

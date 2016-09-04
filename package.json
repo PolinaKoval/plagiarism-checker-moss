@@ -1,5 +1,5 @@
 {
-  "name": "check-cheating",
+  "name": "check-cheating-moss",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,15 +9,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "acorn": "^3.1.0",
-    "estraverse": "^4.2.0",
-    "handlebars": "^4.0.5",
     "jscs": "^2.2.1",
-    "lodash": "^4.6.1",
-    "mocha": "^2.3.3",
-    "natural": "^0.2.1",
     "request-promise": "^2.0.1",
-    "translit": "0.0.1",
     "url": "^0.11.0",
     "url-join": "0.0.1"
   }
