@@ -51,9 +51,7 @@ const runChecker = () => {
             reject(`exec error: ${error}`);
             return;
           }
-          console.log(stdout);
-          const report = stdout.split(/\r|\n/).pop();
-
+          const report = stdout.split(/\r|\n/).find(str => str.indexOf("moss.stanford.edu") > 0);
           resolve(report)
         });
     });
