@@ -2,7 +2,7 @@
 const request = require('request-promise');
 const fs = require('fs');
 const path =require('path');
-const fse = require('fs-extra')
+const fse = require('fs-extra');
 const url = require('url');
 const urljoin = require('url-join');
 const config = require('./config.json');
@@ -34,7 +34,7 @@ const createWorkDir = () => {
             if (!err) {
                 return resolve();
             }
-            reject(e);
+            reject(err);
         });
     });
 };
