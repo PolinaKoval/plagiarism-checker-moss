@@ -5,8 +5,10 @@
         "User-Agent": "request"
     },
     "oauthQuery": "access_token",
-    "repName": "urfu-2015",
-    "taskName": "javascript-tasks-3",
-    "fileName": "lego.js",
+    "repName": "urfu-2016",
+    "taskName": "javascript-task-8",
+    "repName1": "urfu-2015",
+    "taskName1": "javascript-tasks-9",
+    "fileName": "flow.js",
     "state": "all"
 }

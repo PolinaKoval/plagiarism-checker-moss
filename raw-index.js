@@ -18,8 +18,10 @@ const getOptions = (address) => ({
 const main = async () => {
     try {
         await createWorkDir();
-        const allPullRequests = await getPullRequests();
-        const promises = allPullRequests.map(pr => getAndSaveAssignment(pr));
+        const allPullRequests2016 = (await getPullRequests(config.repName, config.taskName));
+        //const allPullRequests2015 = (await getPullRequests(config.repName1, config.taskName1));
+        const promises = allPullRequests2016.map(pr => getAndSaveAssignment(pr, config.repName, config.taskName))
+            //.concat(allPullRequests2015.map(pr => getAndSaveAssignment(pr, config.repName1, config.taskName1)));
         await Promise.all(promises);
         const checkReport = await runChecker();
         console.log(checkReport);
@@ -57,11 +59,11 @@ const runChecker = () => {
     });
 };
 
-const getPullRequests = () => {
+const getPullRequests = (repName, taskName) => {
     const address = url.format({
         protocol: config.protocol,
         host: config.host,
-        pathname: urljoin('repos', config.repName, config.taskName, 'pulls'),
+        pathname: urljoin('repos', repName, taskName, 'pulls'),
         query: {
             [config.oauthQuery]: OAUTH_TOKEN,
             state: config.state,
@@ -73,11 +75,11 @@ const getPullRequests = () => {
     return request(options);
 };
 
-const getListPRFiles = (pr) => {
+const getListPRFiles = (pr, repName, taskName) => {
     const address = url.format({
         protocol: config.protocol,
         host: config.host,
-        pathname: urljoin('repos', config.repName, config.taskName, 'pulls', pr.number, 'files'),
+        pathname: urljoin('repos', repName, taskName, 'pulls', pr.number, 'files'),
         query: {
             [config.oauthQuery]: OAUTH_TOKEN
         }
@@ -94,8 +96,8 @@ const getFile = (file) => {
     return request(options);
 };
 
-const getAndSaveAssignment = async (pr) => {
-    const files = await getListPRFiles(pr);
+const getAndSaveAssignment = async (pr, repName, taskName) => {
+    const files = await getListPRFiles(pr, repName, taskName);
     const fileToCheck = files.find(file => file.filename === config.fileName);
     if (!fileToCheck) {
         return;
